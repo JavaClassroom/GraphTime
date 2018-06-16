@@ -19,7 +19,7 @@ public class TestApplet extends Applet {
 
     @Override
     public void paint(Graphics g) {
-        graph.draw(g);
+        graph.draw(g, 75);
     }
 }
 //</applet>

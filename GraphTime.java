@@ -1,9 +1,13 @@
 package ru.wedro22;
 
-import java.util.HashMap;
+import java.awt.*;
 
 /**
- * Пропорциональный графикп
+ * Пропорциональный график
+ * создается диапазон минут,
+ * добавляются значения в определенных минутах,
+ * задается сглаживание,
+ * получается конкретное значение от общего числа из каждой минуты
  */
 public class GraphTime {
     private float[] val, valCalc=null;
@@ -11,6 +15,7 @@ public class GraphTime {
     private Type type;
     private boolean calculate=false;
     private float amount=0;
+    Graphics graphics;
 
     /**
      * SMOOTH - промежуток заполняется сглаженными величинами (между 1 и 3 будет 2)
@@ -107,7 +112,7 @@ public class GraphTime {
         if (minute<START | minute>END)
             return 0;
         if (!calculate) calculate();
-        float value = valCalc[minute]*total/amount;
+        float value = valCalc[minute-START]*total/amount;
         return value;
     }
 
@@ -164,6 +169,19 @@ public class GraphTime {
             s=(valCalc[i]==val[i] & val[i]>=0)?"*":" ";
             System.out.printf("%2s%4d%10d%16f%16f%5s%16f%n", "#",i,i+START,val[i],valCalc[i],s,
                     getValue(i,total));
+        }
+    }
+
+    public void draw(Graphics g, float total){
+        if (!calculate) calculate();
+        int x1=10,y1=100, x2, y2;
+        for (int i = START; i <= END; i++) {
+            x2=x1+15;
+            y2= (int) (100-valCalc[i]);
+            g.drawLine(x1,y1,x2,y2);
+            g.drawString(String.valueOf(getValue(i,total)), x1, 110+x1);
+            x1=x2;
+            y1=y2;
         }
     }
 
