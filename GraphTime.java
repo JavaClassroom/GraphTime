@@ -2,11 +2,15 @@ package ru.wedro22;
 
 import java.util.HashMap;
 
+/**
+ * Пропорциональный графикп
+ */
 public class GraphTime {
     private float[] val, valCalc=null;
     public final int START, END;
     private Type type;
     private boolean calculate=false;
+    private float amount=0;
 
     /**
      * SMOOTH - промежуток заполняется сглаженными величинами (между 1 и 3 будет 2)
@@ -48,9 +52,9 @@ public class GraphTime {
     }
 
     /**
-     * добавить новое значение
+     * добавить новое значение пропорции
      * @param minute минута, должна быть больше начала действия и меньше конца действия
-     * @param value значение в этой минуте
+     * @param value значение пропорции в этой минуте
      * @return null, если аргумент минуты задано неверно
      */
     public GraphTime add(int minute, float value){
@@ -74,6 +78,7 @@ public class GraphTime {
             smoothInterval(first,two);
             first=two;
         }
+        summ();
         calculate=true;
         return this;
     }
@@ -87,9 +92,25 @@ public class GraphTime {
             if (valCalc[i]<0)
                 valCalc[i]=0;
         }
+        summ();
         calculate=true;
         return this;
     }
+
+    /**
+     * получение величины в конкретный момент времени из распределяемой величины
+     * @param minute время, минута
+     * @param total общее число распределяемого значения
+     * @return величина
+     */
+    public float getValue(int minute, float total){
+        if (minute<START | minute>END)
+            return 0;
+        if (!calculate) calculate();
+        float value = valCalc[minute]*total/amount;
+        return value;
+    }
+
 
     private void copyValToCalc(){
         valCalc=new float[val.length];
@@ -128,25 +149,32 @@ public class GraphTime {
         }
     }
 
-    private void print(){
+    private void summ(){
+        amount=0;
+        for (int i = 0; i < valCalc.length; i++) {
+            amount+=valCalc[i];
+        }
+    }
+
+    private void print(float total){
         if (!calculate) calculate();
-        System.out.printf("%2s%4s%10s%16s%16s%5s%n", " ","i:","min","val","valCalc","=");
+        System.out.printf("%2s%4s%10s%16s%16s%5s%16f%n", " ","i:","min","val","valCalc","=",total);
         String s=" ";
         for (int i = 0; i < val.length; i++) {
             s=(valCalc[i]==val[i] & val[i]>=0)?"*":" ";
-            System.out.printf("%2s%4d%10d%16f%16f%5s%n", "#",i,i+START,val[i],valCalc[i],s);
+            System.out.printf("%2s%4d%10d%16f%16f%5s%16f%n", "#",i,i+START,val[i],valCalc[i],s,
+                    getValue(i,total));
         }
     }
 
     public static void main(String[] args){
-        new GraphTime(0,8, Type.SMOOTH)
+        GraphTime gt = new GraphTime(0,8, Type.SMOOTH)
                 .add(3,3)
                 .add(6,3)
                 .add(8,1)
                 //.smoothing()
                 .zeroing()
-                .add(8,2)
-                .print();
-
+                .add(8,2);
+        gt.print(75);
     }
 }
