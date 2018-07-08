@@ -1,6 +1,7 @@
 package ru.wedro22;
 
-import java.awt.*;
+import org.newdawn.slick.Color;
+import org.newdawn.slick.Graphics;
 
 /**
  * Пропорциональный график
@@ -15,7 +16,9 @@ public class GraphTime {
     private Type type;
     private boolean calculate=false;
     private float amount=0;
-    Graphics graphics;
+    private float total=100;
+    private int maxValCalcIndex;
+    private Text text=new Text();
 
     /**
      * SMOOTH - промежуток заполняется сглаженными величинами (между 1 и 3 будет 2)
@@ -84,7 +87,7 @@ public class GraphTime {
             first=two;
         }
         summ();
-        calculate=true;
+        set_calculate();
         return this;
     }
 
@@ -98,17 +101,16 @@ public class GraphTime {
                 valCalc[i]=0;
         }
         summ();
-        calculate=true;
+        set_calculate();
         return this;
     }
 
     /**
      * получение величины в конкретный момент времени из распределяемой величины
      * @param minute время, минута
-     * @param total общее число распределяемого значения
      * @return величина
      */
-    public float getValue(int minute, float total){
+    public float getValue(int minute){
         if (minute<START | minute>END)
             return 0;
         if (!calculate) calculate();
@@ -161,28 +163,93 @@ public class GraphTime {
         }
     }
 
-    private void print(float total){
+    public GraphTime setTotal(float total){
+        if (total>0) {
+            this.total = total;
+            calculate=false;
+        }
+        else
+            System.out.println("GraphTime setTotal: total<0");
+        return this;
+    }
+
+    public float getTotal(){
+        return total;
+    }
+
+    public void print(){
         if (!calculate) calculate();
         System.out.printf("%2s%4s%10s%16s%16s%5s%16f%n", " ","i:","min","val","valCalc","=",total);
         String s=" ";
         for (int i = 0; i < val.length; i++) {
             s=(valCalc[i]==val[i] & val[i]>=0)?"*":" ";
             System.out.printf("%2s%4d%10d%16f%16f%5s%16f%n", "#",i,i+START,val[i],valCalc[i],s,
-                    getValue(i,total));
+                    getValue(i+START));
         }
     }
 
-    public void draw(Graphics g, float total){
+    /**
+     * @param g ГРАФИКА
+     * @param x стартовая позиция X графика в окне
+     * @param y стартовая позиция Y графика в окне
+     * @param width длина графика
+     * @param height    высота графика
+     */
+    public void draw(Graphics g, float x, float y, float width, float height){
         if (!calculate) calculate();
-        int x1=10,y1=100, x2, y2;
-        for (int i = START; i <= END; i++) {
-            x2=x1+15;
-            y2= (int) (100-valCalc[i]);
-            g.drawLine(x1,y1,x2,y2);
-            g.drawString(String.valueOf(getValue(i,total)), x1, 110+x1);
-            x1=x2;
-            y1=y2;
+
+        g.drawRect(x,y,width,height);
+
+        float d_x=width/(END-START+1);    //графическая еденица длины (минута)
+        float hei=valCalc[maxValCalcIndex];   //неграфическая высота
+        float d_y=height/hei; //графическая еденица высоты (доля)
+
+        float l_x1=x;           //линия начало
+        float l_y1=y+height;    //линия начало
+        float l_x2, l_y2;       //линия конец
+        for (int i=START; i<=END; i++){   //i = минута
+            l_x2=l_x1+d_x;
+            l_y2=y+height-valCalc[i-START]*d_y;
+            g.setColor(Color.red);
+            g.drawLine(l_x1,l_y1,l_x2,l_y2);
+            g.setColor(Color.white);
+            l_x1=l_x2;
+            l_y1=l_y2;
         }
+
+        if (text.active){
+            g.drawString(text.string, x, y-g.getFont().getLineHeight()*1.2f);
+        }
+    }
+
+    public void mouseOver(float x, float y, float width, float height, float mouseX, float mouseY){
+        if (mouseX<x || mouseX>(x+width) || mouseY<y || mouseY>(y+height)) {
+            text.active=false;
+            return;
+        }
+        text.active=true;
+        text.str_X=mouseX;
+        text.str_Y=mouseY;
+
+        int min= (int) ((mouseX-x)*valCalc.length/width);  //определение минуты по графике
+
+        text.string= "of "+total+" : "+String.valueOf(getValue(min));
+    }
+
+    private class Text{
+        boolean active=false;
+        float str_X=0;
+        float str_Y=0;
+        String string;
+    }
+
+    private void set_calculate(){
+        maxValCalcIndex=0;
+        for (int i = 0; i < valCalc.length; i++) {
+            if (valCalc[maxValCalcIndex]<valCalc[i])
+                maxValCalcIndex=i;
+        }
+        calculate=true;
     }
 
     public static void main(String[] args){
@@ -193,6 +260,6 @@ public class GraphTime {
                 //.smoothing()
                 .zeroing()
                 .add(8,2);
-        gt.print(75);
+        gt.print();
     }
 }
